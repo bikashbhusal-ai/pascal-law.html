@@ -1,0 +1,417 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.sim-wrap { padding: 1rem 0; }
+.credit-bar {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+.sim-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 2px;
+}
+.sim-subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-bottom: 1.25rem;
+}
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.canvas-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.controls-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+}
+.controls-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctrl-group { margin-bottom: 14px; }
+.ctrl-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.ctrl-name { font-size: 13px; color: var(--color-text-secondary); }
+.ctrl-val {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  min-width: 54px;
+  text-align: right;
+}
+input[type=range] { width: 100%; }
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--color-border-tertiary);
+}
+.toggle-label { font-size: 13px; color: var(--color-text-secondary); }
+.toggle {
+  width: 38px; height: 20px;
+  border-radius: 10px;
+  background: #378ADD;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle.off { background: var(--color-border-secondary); }
+.toggle-knob {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: white;
+  top: 2px; left: 20px;
+  transition: left 0.2s;
+}
+.toggle.off .toggle-knob { left: 2px; }
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.metric-card {
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-md);
+  padding: 10px 12px;
+  text-align: center;
+}
+.metric-label { font-size: 11px; color: var(--color-text-secondary); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; }
+.metric-value { font-size: 22px; font-weight: 500; }
+.metric-value.blue { color: #378ADD; }
+.metric-value.red { color: #D85A30; }
+.metric-value.green { color: #1D9E75; }
+.physics-card {
+  background: var(--color-background-primary);
+  border: 0.5px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+}
+.physics-title {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+}
+.eq-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.eq-box {
+  background: var(--color-background-secondary);
+  border-radius: var(--border-radius-md);
+  padding: 8px 14px;
+  font-size: 15px;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono, monospace);
+}
+.eq-arrow { color: var(--color-text-tertiary); font-size: 18px; }
+.eq-result { font-size: 15px; font-weight: 500; color: var(--color-text-primary); font-family: var(--font-mono, monospace); }
+canvas { display: block; }
+</style>
+
+<div class="sim-wrap">
+  <h2 class="sr-only">Pascal's Law interactive simulation — adjust input force and piston areas to see pressure transmission in a hydraulic system.</h2>
+  <div class="credit-bar">Design by : Bikash Bhusal</div>
+  <div class="sim-title">Pascal's Law Simulation</div>
+  <div class="sim-subtitle">"Pressure applied to a confined fluid is transmitted undiminished."</div>
+
+  <div class="main-grid">
+    <div class="canvas-card">
+      <canvas id="hydraulicCanvas" width="360" height="260"></canvas>
+    </div>
+    <div class="controls-card">
+      <div class="controls-title">
+        <i class="ti ti-adjustments-horizontal" aria-hidden="true" style="font-size:17px;color:var(--color-text-secondary)"></i>
+        Controls
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="ctrl-name">Input Force (<i>F₁</i>)</span>
+          <span class="ctrl-val" id="f1Val">50 N</span>
+        </div>
+        <input type="range" id="f1Slider" min="10" max="500" step="1" value="50">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="ctrl-name">Left Area (<i>A₁</i>)</span>
+          <span class="ctrl-val" id="a1Val">1.0 m²</span>
+        </div>
+        <input type="range" id="a1Slider" min="0.5" max="5" step="0.1" value="1.0">
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">
+          <span class="ctrl-name">Right Area (<i>A₂</i>)</span>
+          <span class="ctrl-val" id="a2Val">4.0 m²</span>
+        </div>
+        <input type="range" id="a2Slider" min="0.5" max="10" step="0.1" value="4.0">
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Show Equations</span>
+        <button class="toggle" id="eqToggle" aria-label="Toggle equations">
+          <div class="toggle-knob"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Pressure (P)</div>
+      <div class="metric-value blue" id="mPressure">50.0 Pa</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Input F₁</div>
+      <div class="metric-value red" id="mF1">50 N</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Output F₂</div>
+      <div class="metric-value green" id="mF2">200 N</div>
+    </div>
+  </div>
+
+  <div class="physics-card" id="physicsCard">
+    <div class="physics-title"><i class="ti ti-math-function" aria-hidden="true" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>Physics Calculation</div>
+    <div class="eq-row">
+      <div class="eq-box" id="eq1">P = F₁/A₁ = 50/1.0 = 50.0 Pa</div>
+    </div>
+    <div class="eq-row" style="margin-top:6px;">
+      <div class="eq-box" id="eq2">F₂ = P × A₂ = 50.0 × 4.0 = 200.0 N</div>
+    </div>
+    <div class="eq-row" style="margin-top:6px;">
+      <div class="eq-box" id="eq3">Mechanical Advantage = A₂/A₁ = 4.0</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('hydraulicCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+let f1 = 50, a1 = 1.0, a2 = 4.0, showEq = true;
+let particles = [];
+let animFrame = 0;
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 28; i++) {
+    particles.push({
+      x: Math.random() * 300 + 30,
+      y: Math.random() * 80 + 145,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 2 + 1.5
+    });
+  }
+}
+initParticles();
+
+function getColors() {
+  const s = getComputedStyle(document.documentElement);
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    fluid: isDark ? 'rgba(55,138,221,0.22)' : 'rgba(55,138,221,0.18)',
+    fluidStroke: isDark ? 'rgba(55,138,221,0.6)' : 'rgba(55,138,221,0.4)',
+    particle: isDark ? 'rgba(55,138,221,0.5)' : 'rgba(55,138,221,0.4)',
+    piston: isDark ? '#555' : '#888',
+    pistonStroke: isDark ? '#333' : '#aaa',
+    wall: isDark ? '#444' : '#bbb',
+    text: isDark ? '#ccc' : '#555',
+    arrowIn: '#D85A30',
+    arrowOut: '#1D9E75',
+  };
+}
+
+function drawArrow(x1, y1, x2, y2, color, lineW) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineW || 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const hs = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hs * Math.cos(angle - 0.4), y2 - hs * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - hs * Math.cos(angle + 0.4), y2 - hs * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const c = getColors();
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  const lw = 14 + a1 * 12;
+  const rw = 60 + a2 * 20;
+  const lx = 18, rx = 200;
+  const bottom = 238, fluidTop = 148;
+  const lRight = lx + lw, rRight = rx + Math.min(rw, W - rx - 8);
+
+  ctx.strokeStyle = isDark ? '#555' : '#bbb';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(lx, fluidTop - 20);
+  ctx.lineTo(lx, bottom);
+  ctx.lineTo(lRight, bottom);
+  ctx.lineTo(lRight, fluidTop + 10);
+  ctx.moveTo(lRight, fluidTop + 10);
+  ctx.lineTo(rx, fluidTop + 10);
+  ctx.lineTo(rx, bottom);
+  ctx.lineTo(rRight, bottom);
+  ctx.lineTo(rRight, fluidTop - 20);
+  ctx.stroke();
+
+  ctx.fillStyle = c.fluid;
+  ctx.beginPath();
+  ctx.moveTo(lx + 2, fluidTop + 12);
+  ctx.lineTo(lRight - 2, fluidTop + 12);
+  ctx.lineTo(lRight - 2, fluidTop + 10);
+  ctx.lineTo(rx + 2, fluidTop + 10);
+  ctx.lineTo(rx + 2, bottom - 2);
+  ctx.lineTo(rRight - 2, bottom - 2);
+  ctx.lineTo(rRight - 2, fluidTop - 2);
+  ctx.lineTo(lRight - 2, fluidTop - 2);
+  ctx.lineTo(lRight - 2, bottom - 2);
+  ctx.lineTo(lx + 2, bottom - 2);
+  ctx.closePath();
+  ctx.fill();
+
+  animFrame++;
+  for (let p of particles) {
+    p.x += p.vx + Math.sin(animFrame * 0.02 + p.y) * 0.15;
+    p.y += p.vy + Math.cos(animFrame * 0.015 + p.x) * 0.1;
+    if (p.x < lx + 4) { p.vx = Math.abs(p.vx); }
+    if (p.x > rRight - 4) { p.vx = -Math.abs(p.vx); }
+    if (p.y < fluidTop + 14) { p.vy = Math.abs(p.vy); }
+    if (p.y > bottom - 4) { p.vy = -Math.abs(p.vy); }
+    if (p.x > lx + lw - 2 && p.x < rx + 2 && p.y < fluidTop + 10) {
+      p.vy = Math.abs(p.vy);
+    }
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = c.particle;
+    ctx.fill();
+  }
+
+  const lPistonY = fluidTop + 5;
+  ctx.fillStyle = c.piston;
+  ctx.strokeStyle = c.pistonStroke;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(lx + 2, lPistonY - 9, lw - 4, 9);
+  ctx.fill(); ctx.stroke();
+
+  const rPistonW = rRight - rx - 4;
+  ctx.fillStyle = c.piston;
+  ctx.beginPath();
+  ctx.rect(rx + 2, fluidTop - 8, rPistonW, 9);
+  ctx.fill(); ctx.stroke();
+
+  const lcx = lx + lw / 2;
+  const rcx = rx + rPistonW / 2 + 2;
+  const f1ScaleY = Math.min(50, Math.log(f1 + 1) * 10);
+  const f2ScaleY = Math.min(55, Math.log(f2 + 1) * 10);
+
+  drawArrow(lcx, lPistonY - 10 - f1ScaleY, lcx, lPistonY - 11, c.arrowIn, 3);
+  drawArrow(rcx, fluidTop - 10, rcx, fluidTop - 10 - f2ScaleY, c.arrowOut, 3);
+
+  ctx.fillStyle = c.arrowIn;
+  ctx.font = '500 12px var(--font-sans, sans-serif)';
+  ctx.textAlign = 'center';
+  ctx.fillText('F₁', lcx, lPistonY - f1ScaleY - 16);
+  ctx.fillStyle = c.arrowOut;
+  ctx.fillText('F₂', rcx, fluidTop - f2ScaleY - 14);
+
+  ctx.fillStyle = c.text;
+  ctx.font = '11px var(--font-sans, sans-serif)';
+  ctx.textAlign = 'center';
+  ctx.fillText('A₁', lcx, bottom - 8);
+  ctx.fillText('A₂', rcx, bottom - 8);
+
+  requestAnimationFrame(draw);
+}
+
+function update() {
+  f1 = parseFloat(document.getElementById('f1Slider').value);
+  a1 = parseFloat(document.getElementById('a1Slider').value);
+  a2 = parseFloat(document.getElementById('a2Slider').value);
+
+  const P = f1 / a1;
+  f2 = P * a2;
+  const MA = a2 / a1;
+
+  document.getElementById('f1Val').textContent = f1 + ' N';
+  document.getElementById('a1Val').textContent = a1.toFixed(1) + ' m²';
+  document.getElementById('a2Val').textContent = a2.toFixed(1) + ' m²';
+  document.getElementById('mPressure').textContent = P.toFixed(1) + ' Pa';
+  document.getElementById('mF1').textContent = f1 + ' N';
+  document.getElementById('mF2').textContent = f2.toFixed(1) + ' N';
+
+  document.getElementById('eq1').textContent =
+    `P = F₁/A₁ = ${f1}/${a1.toFixed(1)} = ${P.toFixed(2)} Pa`;
+  document.getElementById('eq2').textContent =
+    `F₂ = P × A₂ = ${P.toFixed(2)} × ${a2.toFixed(1)} = ${f2.toFixed(2)} N`;
+  document.getElementById('eq3').textContent =
+    `Mechanical Advantage = A₂/A₁ = ${MA.toFixed(2)}`;
+}
+
+document.getElementById('f1Slider').addEventListener('input', update);
+document.getElementById('a1Slider').addEventListener('input', update);
+document.getElementById('a2Slider').addEventListener('input', update);
+document.getElementById('eqToggle').addEventListener('click', function() {
+  showEq = !showEq;
+  this.classList.toggle('off', !showEq);
+  document.getElementById('physicsCard').style.display = showEq ? '' : 'none';
+});
+
+update();
+draw();
+</script>
